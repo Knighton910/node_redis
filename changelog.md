@@ -1,12 +1,15 @@
 Changelog
 =========
 
-## v.2.x.x - xx, 2015
+## v.2.2.0 - xx, 2015
 
 Features
 
 -  Added disable_resubscribing option to prevent a client from resubscribing after reconnecting (@BridgeAR)
--  Increase performance by exchanging built in queue with [Petka Antonov's](@petkaantonov) [double-ended queue](https://github.com/petkaantonov/deque) and prevent polymorphism (@BridgeAR)
+-  Increased performance (@BridgeAR)
+ -  exchanging built in queue with [Petka Antonov's](@petkaantonov) [double-ended queue](https://github.com/petkaantonov/deque)
+ -  prevent polymorphism
+ -  optimize statements
 
 Bugfixes
 
