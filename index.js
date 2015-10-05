@@ -670,10 +670,11 @@ RedisClient.prototype.send_command = function (command, args, callback) {
             err = new Error('send_command: ' + command + ' value must not be undefined or null');
             err.command = command;
             if (callback) {
-                return callback && callback(err);
+                callback(err);
+            } else {
+                this.emit('error', err);
             }
-            this.emit('error', err);
-            return;
+            return false;
         }
     }
 
@@ -708,7 +709,8 @@ RedisClient.prototype.send_command = function (command, args, callback) {
             this.offline_queue.push(command_obj);
             this.should_buffer = true;
         }
-        return;
+        // Return false to signal no buffering
+        return false;
     }
 
     if (command === 'subscribe' || command === 'psubscribe' || command === 'unsubscribe' || command === 'punsubscribe') {
@@ -721,7 +723,7 @@ RedisClient.prototype.send_command = function (command, args, callback) {
         err = new Error('Connection in subscriber mode, only subscriber commands may be used');
         err.command = command.toUpperCase();
         this.emit('error', err);
-        return;
+        return false;
     }
     this.command_queue.push(command_obj);
     this.commands_sent += 1;
@@ -905,8 +907,7 @@ commands.forEach(function (fullCommand) {
 // store db in this.select_db to restore it on reconnect
 RedisClient.prototype.select = RedisClient.prototype.SELECT = function (db, callback) {
     var self = this;
-
-    this.send_command('select', [db], function (err, res) {
+    return this.send_command('select', [db], function (err, res) {
         if (err === null) {
             self.selected_db = db;
         }
@@ -928,16 +929,16 @@ RedisClient.prototype.auth = RedisClient.prototype.AUTH = function (pass, callba
         } else {
             this.emit('error', err);
         }
-        return;
+        return false;
     }
     this.auth_pass = pass;
     debug('Saving auth as ' + this.auth_pass);
     // Only run the callback once. So do not safe it if already connected
     if (this.connected) {
-        this.send_command('auth', [this.auth_pass], callback);
-    } else {
-        this.auth_callback = callback;
+        return this.send_command('auth', [this.auth_pass], callback);
     }
+    this.auth_callback = callback;
+    return false;
 };
 
 RedisClient.prototype.hmset = RedisClient.prototype.HMSET = function (key, args, callback) {
@@ -1037,7 +1038,7 @@ Multi.prototype.exec = Multi.prototype.EXEC = function (callback) {
         this.send_command(command, args, index, cb);
     }
 
-    this._client.send_command('exec', [], function(err, replies) {
+    return this._client.send_command('exec', [], function(err, replies) {
         self.execute_callback(err, replies);
     });
 };
